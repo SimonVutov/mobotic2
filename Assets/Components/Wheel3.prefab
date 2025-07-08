@@ -378,7 +378,7 @@ MonoBehaviour:
   flipX: 0
   suspensionLength: 0.1
   frictionCoefficient: 1
-  suspensionForce: 900
+  suspensionForce: 200
   maxGrip: 250
   wheelGrip: 15
   suspensionForceClamp: 200
