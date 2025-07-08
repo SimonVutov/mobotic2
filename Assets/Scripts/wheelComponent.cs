@@ -160,9 +160,9 @@ public class WheelComponent : MonoBehaviour
         // Handle wheel visual flipping and set rolling direction multiplier
         if (flipX)
         {
-            Vector3 visualScale = wheelVisual.localScale;
-            visualScale.x = -Mathf.Abs(visualScale.x);
-            wheelVisual.localScale = visualScale;
+            // Vector3 visualScale = wheelVisual.localScale;
+            // visualScale.x = -Mathf.Abs(visualScale.x);
+            // wheelVisual.localScale = visualScale;
             rollingDirectionMultiplier = -1; // Reverse the rolling direction
         }
         else
@@ -206,7 +206,7 @@ public class WheelComponent : MonoBehaviour
         
         // Perform raycast for ground detection
         RaycastHit hit;
-        float rayLength = GetWheelRadius() * 2f + suspensionLength;
+        float rayLength = GetWheelRadius() + suspensionLength;
         bool isGrounded = Physics.Raycast(wheelWorldPosition, -transform.up, out hit, rayLength);
         
         if (isGrounded)
@@ -266,7 +266,7 @@ public class WheelComponent : MonoBehaviour
     private void UpdateSuspensionForces(RaycastHit hit)
     {
         // Calculate compression and damping
-        float compression = GetWheelRadius() * 2f + suspensionLength - hit.distance;
+        float compression = GetWheelRadius() + suspensionLength - hit.distance;
         float damping = (lastSuspensionLength - hit.distance) * dampingAmount;
         
         // Calculate normal force
@@ -355,8 +355,8 @@ public class WheelComponent : MonoBehaviour
             // Calculate the velocity angle
             float velocityAngle = Mathf.Atan2(localVelocity.x, localVelocity.z) * Mathf.Rad2Deg;
             
-            // Current wheel steering angle
-            float currentWheelAngle = lerpedInputX * 30f; // Assuming 30 degree max turn angle
+            // Current wheel steering angle (input.x is already in degrees from vehicleControl)
+            float currentWheelAngle = lerpedInputX;
             
             // Slip angle is the difference between where we're going vs where we're pointed
             float rawSlipAngle = velocityAngle - currentWheelAngle;
@@ -379,8 +379,8 @@ public class WheelComponent : MonoBehaviour
         // STEP 1: Update the wheelVisual rotation (steering - Y axis only)
         if (!freeRoll)
         {
-            // Only rotate around Y axis for steering
-            Quaternion targetYRotation = Quaternion.Euler(0, -lerpedInputX * 30f, 0); // Assuming 30 degree max turn
+            // Only rotate around Y axis for steering (input.x is already in degrees from vehicleControl)
+            Quaternion targetYRotation = Quaternion.Euler(0, -lerpedInputX, 0);
             wheelVisual.localRotation = Quaternion.Lerp(
                 wheelVisual.localRotation,
                 targetYRotation,
