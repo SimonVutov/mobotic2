@@ -83,7 +83,8 @@ public class vehicleControl : MonoBehaviour
     {
         foreach (WheelReference child in wheels)
         {
-            child.wheel.GetComponent<WheelComponent>().parentRigidbody = GetComponent<Rigidbody>();
+            // Let each wheel find its own local rigidbody (swivel piece) naturally
+            // DO NOT override parentRigidbody - let FindParentRigidbody() work properly
             child.wheel.GetComponent<WheelComponent>().vehicleController = this;
         }
     }

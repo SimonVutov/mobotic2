@@ -28,14 +28,24 @@ public class WheelComponent : MonoBehaviour
     [Range(0.1f, 10f)] public float dampingAmount = 2.5f;
     [Range(0.01f, 1.0f)] public float dragCoefficient = 0.3f;
     [Range(0.001f, 0.1f)] public float rollingResistance = 0.015f;
+    
+    [Header("Enhanced Physics")]
+    [Range(0.1f, 2f)] public float coefStaticFriction = 0.95f;
+    [Range(0.1f, 2f)] public float coefKineticFriction = 0.35f;
+    [Range(0.1f, 50f)] public float wheelGripX = 8f;    // Lateral grip
+    [Range(0.1f, 50f)] public float wheelGripZ = 42f;   // Longitudinal grip
+    [Range(0.1f, 50f)] public float wheelMass = 16f;    // Mass for inertia calculation
+    [Range(0.1f, 10f)] public float brakeStrength = 0.5f;
+    
     [HideInInspector] public Rigidbody parentRigidbody;
 
     // Hidden Public Variables
     public Vector2 input = Vector2.zero;
     [HideInInspector] public bool isMovingForward = false;
     [HideInInspector] public vehicleControl vehicleController;
+    [HideInInspector] public float braking = 0f;
 
-    // Runtime wheel properties
+    // Enhanced Runtime Properties
     private Vector3 wheelWorldPosition;
     private Vector3 localVelocity;
     private Vector3 localSlipDirection;
@@ -46,6 +56,14 @@ public class WheelComponent : MonoBehaviour
     private float hitPointForce;
     private int rollingDirectionMultiplier = 1;
     private float lerpedInputX = 0f;
+    
+    // New enhanced physics properties
+    private float angularVelocity = 0f;
+    private float normalForce = 0f;
+    private float slip = 0f;
+    private float xSlipAngle = 0f;
+    private bool isSliding = false;
+    private float wheelInertia = 0f;
 
     private void Awake()
     {
@@ -60,6 +78,12 @@ public class WheelComponent : MonoBehaviour
         if (maxGrip <= 0) maxGrip = 400.0f;
         if (frictionCoefficient <= 0) frictionCoefficient = 1f;
         if (suspensionLength <= 0) suspensionLength = 0.1f;
+        
+        // Validate new physics properties
+        if (coefStaticFriction < coefKineticFriction)
+        {
+            Debug.LogWarning("Static friction should be higher than kinetic friction for realistic physics");
+        }
     }
 
     private void Start()
@@ -67,12 +91,16 @@ public class WheelComponent : MonoBehaviour
         InitializeComponents();
         InitializeWheel();
         if (hideWheelVisual) wheelVisual.gameObject.SetActive(false);
+        
+        // Calculate wheel inertia for angular velocity calculations
+        float wheelRadius = GetWheelRadius();
+        wheelInertia = wheelMass * wheelRadius * wheelRadius / 2f;
     }
 
     private void FixedUpdate()
     {
         ApplyAerodynamicDrag();
-        UpdateWheel();
+        UpdateWheelPhysics();
         lerpedInputX = Mathf.Lerp(lerpedInputX, input.x, Time.fixedDeltaTime * 5);
     }
 
@@ -90,6 +118,7 @@ public class WheelComponent : MonoBehaviour
             if (rb != null)
             {
                 parentRigidbody = rb;
+                Debug.Log($"WheelComponent on '{gameObject.name}' found rigidbody on '{rb.gameObject.name}'");
                 return;
             }
             currentTransform = currentTransform.parent;
@@ -154,7 +183,7 @@ public class WheelComponent : MonoBehaviour
 
     #endregion
 
-    #region Physics Update Methods
+    #region Enhanced Physics Update Methods
 
     private void ApplyAerodynamicDrag()
     {
@@ -168,124 +197,180 @@ public class WheelComponent : MonoBehaviour
         parentRigidbody.AddForce(dragForce);
     }
 
-    private void UpdateWheel()
+    private void UpdateWheelPhysics()
     {
         if (wheelVisual == null || parentRigidbody == null) return;
 
-        // Update wheel physics
-        UpdateWheelForces();
+        // Update wheel world position
+        wheelWorldPosition = transform.position;
         
-        // Update wheel position
-        UpdateWheelPosition();
+        // Perform raycast for ground detection
+        RaycastHit hit;
+        float rayLength = GetWheelRadius() * 2f + suspensionLength;
+        bool isGrounded = Physics.Raycast(wheelWorldPosition, -transform.up, out hit, rayLength);
+        
+        if (isGrounded)
+        {
+            UpdateGroundedWheel(hit);
+        }
+        else
+        {
+            UpdateAirborneWheel();
+        }
         
         // Update wheel rotation
         UpdateWheelRotation();
     }
 
-    private void UpdateWheelForces()
+    private void UpdateGroundedWheel(RaycastHit hit)
+    {
+        // Calculate velocities
+        Vector3 velocityAtWheel = parentRigidbody.GetPointVelocity(wheelWorldPosition);
+        Vector3 worldVelAtHit = parentRigidbody.GetPointVelocity(hit.point);
+        localVelocity = wheelVisual.InverseTransformDirection(velocityAtWheel);
+        Vector3 localHitVelocity = wheelVisual.InverseTransformDirection(worldVelAtHit);
+        
+        // Update forward direction
+        isMovingForward = localVelocity.z > 0.1f;
+        
+        // Calculate suspension forces
+        UpdateSuspensionForces(hit);
+        
+        // Calculate wheel torque and angular velocity
+        UpdateWheelTorque();
+        
+        // Calculate friction forces
+        UpdateFrictionForces(localHitVelocity, hit.point);
+        
+        // Calculate slip angle
+        UpdateSlipAngle();
+        
+        // Position wheel at contact point
+        wheelVisual.position = hit.point + transform.up * GetWheelRadius();
+        lastSuspensionLength = hit.distance;
+    }
+
+    private void UpdateAirborneWheel()
+    {
+        // Position wheel at maximum extension when no contact
+        wheelVisual.position = wheelWorldPosition - transform.up * suspensionLength;
+        suspensionForceDirection = Vector3.zero;
+        normalForce = 0f;
+        isSliding = false;
+        slip = 0f;
+        
+        // Apply some drag to angular velocity when airborne
+        angularVelocity *= 0.98f;
+    }
+
+    private void UpdateSuspensionForces(RaycastHit hit)
+    {
+        // Calculate compression and damping
+        float compression = GetWheelRadius() * 2f + suspensionLength - hit.distance;
+        float damping = (lastSuspensionLength - hit.distance) * dampingAmount;
+        
+        // Calculate normal force
+        normalForce = (compression + damping) * suspensionForce;
+        normalForce = Mathf.Clamp(normalForce, 0f, suspensionForceClamp);
+        
+        // Apply suspension force
+        suspensionForceDirection = hit.normal * normalForce;
+    }
+
+    private void UpdateWheelTorque()
     {
         // Calculate torque from input (only if not free rolling)
-        torque = freeRoll ? 0 : input.y;
-
-        // Calculate force from torque
-        if (vehicleController != null)
+        if (!freeRoll)
         {
-            hitPointForce = torque / GetWheelRadius() * 
-                           (vehicleController.sectionCount / vehicleController.massInKg);
+            if (vehicleController != null)
+            {
+                torque = input.y * GetWheelRadius() * 
+                        (vehicleController.sectionCount / vehicleController.massInKg) * 
+                        maxGrip * 0.1f; // Scale factor for reasonable torque
+            }
+            else
+            {
+                torque = input.y * GetWheelRadius() * maxGrip * 0.1f;
+            }
         }
         else
         {
-            hitPointForce = torque / GetWheelRadius();
+            torque = 0f;
         }
-
-        // Apply friction
-        torque -= frictionCoefficient * 
-                 Mathf.Sign(parentRigidbody.GetPointVelocity(wheelWorldPosition).z) * 
-                 Time.fixedDeltaTime;
-
-        // Update world position (now using transform position)
-        wheelWorldPosition = transform.position;
-
-        // Calculate slip direction
-        CalculateSlipDirection();
     }
 
-    private void CalculateSlipDirection()
+    private void UpdateFrictionForces(Vector3 localHitVelocity, Vector3 hitPoint)
     {
-        // Get local velocity
-        localVelocity = transform.InverseTransformDirection(
-            parentRigidbody.GetPointVelocity(wheelWorldPosition));
-
-        // Check forward direction
-        isMovingForward = localVelocity.z > 0;
-
-        // Calculate slip direction
-        if (freeRoll)
+        // Calculate lateral and longitudinal friction forces
+        float lateralFriction = -wheelGripX * localVelocity.x - 2f * localHitVelocity.x;
+        float longitudinalFriction = -wheelGripZ * (localVelocity.z - angularVelocity * GetWheelRadius());
+        
+        // Apply rolling resistance torque
+        float rollingResistanceTorque = 0f;
+        if (normalForce > 0f)
         {
-            localSlipDirection = Vector3.zero;
+            float rollingResistanceForce = rollingResistance * normalForce;
+            rollingResistanceTorque = rollingResistanceForce * GetWheelRadius();
+            rollingResistanceTorque *= -Mathf.Sign(angularVelocity);
         }
-        else
+        
+        // Update angular velocity based on torque and friction
+        float netTorque = torque - longitudinalFriction * GetWheelRadius() - rollingResistanceTorque;
+        angularVelocity += netTorque / wheelInertia * Time.fixedDeltaTime;
+        
+        // Apply braking
+        angularVelocity *= 1f - braking * brakeStrength * Time.fixedDeltaTime;
+        
+        // Calculate total local force
+        Vector3 totalLocalForce = new Vector3(lateralFriction, 0f, longitudinalFriction) * 
+                                 normalForce * coefStaticFriction * frictionCoefficient * Time.fixedDeltaTime;
+        
+        // Calculate maximum friction force
+        float maxFrictionForce = normalForce * coefStaticFriction * frictionCoefficient;
+        
+        // Determine if wheel is sliding and calculate slip
+        isSliding = totalLocalForce.magnitude > maxFrictionForce;
+        slip = maxFrictionForce > 0f ? totalLocalForce.magnitude / maxFrictionForce : 0f;
+        
+        // Clamp force and apply kinetic friction if sliding
+        totalLocalForce = Vector3.ClampMagnitude(totalLocalForce, maxFrictionForce);
+        if (isSliding)
         {
-            // Get the current steering rotation in wheel space
-            Quaternion steeringRotation = Quaternion.Euler(0, lerpedInputX, 0);
-            
-            // Transform the local velocity to wheel-aligned space
-            Vector3 wheelAlignedVelocity = steeringRotation * localVelocity;
-            
-            // Calculate lateral grip (sideways resistance)
-            float lateralGrip = -wheelAlignedVelocity.x * wheelGrip;
-            
-            // Calculate longitudinal grip (forward/backward force including drive torque)
-            float longitudinalGrip = -wheelAlignedVelocity.z * rollingResistance * wheelGrip + hitPointForce;
-            
-            // Combine forces in wheel-aligned space
-            Vector3 wheelAlignedForces = new Vector3(lateralGrip, 0, longitudinalGrip);
-            
-            // Transform back to vehicle space
-            localSlipDirection = Quaternion.Inverse(steeringRotation) * wheelAlignedForces;
+            totalLocalForce *= (coefKineticFriction / coefStaticFriction);
         }
-
-        // Convert to world space and clamp magnitude
-        worldSlipDirection = Vector3.ClampMagnitude(
-            transform.TransformDirection(localSlipDirection), 
-            maxGrip);
+        
+        // Convert to world space
+        worldSlipDirection = wheelVisual.TransformDirection(totalLocalForce);
+        
+        // Apply forces to rigidbody
+        parentRigidbody.AddForceAtPosition(suspensionForceDirection + worldSlipDirection, 
+                                          hitPoint);
     }
 
-    private void UpdateWheelPosition()
+    private void UpdateSlipAngle()
     {
-        // Raycast to check ground contact
-        RaycastHit hit;
-        if (Physics.Raycast(wheelWorldPosition, -transform.up, out hit, suspensionLength + GetWheelRadius()))
+        // Calculate slip angle only when moving with sufficient velocity
+        if (localVelocity.magnitude > 0.5f)
         {
-            // Calculate suspension force
-            suspensionForceDirection = hit.normal * 
-                                     Mathf.Clamp(
-                                         suspensionLength + GetWheelRadius() - hit.distance + 
-                                         Mathf.Clamp(lastSuspensionLength - hit.distance, -1, 1) * 
-                                         dampingAmount, 
-                                         0, Mathf.Infinity) * 
-                                     suspensionForce * 
-                                     Time.fixedDeltaTime * 50;
+            // Calculate the velocity angle
+            float velocityAngle = Mathf.Atan2(localVelocity.x, localVelocity.z) * Mathf.Rad2Deg;
             
-            // Clamp suspension force
-            suspensionForceDirection = Vector3.ClampMagnitude(
-                suspensionForceDirection, 
-                suspensionForceClamp);
-
-            // Apply forces to the parent Rigidbody
-            parentRigidbody.AddForceAtPosition(
-                suspensionForceDirection + worldSlipDirection, 
-                hit.point);
-
-            // Position wheel at contact point
-            wheelVisual.position = hit.point + transform.up * GetWheelRadius();
-            lastSuspensionLength = hit.distance;
+            // Current wheel steering angle
+            float currentWheelAngle = lerpedInputX * 30f; // Assuming 30 degree max turn angle
+            
+            // Slip angle is the difference between where we're going vs where we're pointed
+            float rawSlipAngle = velocityAngle - currentWheelAngle;
+            
+            // Normalize angle to [-180, 180] range
+            while (rawSlipAngle > 180f) rawSlipAngle -= 360f;
+            while (rawSlipAngle < -180f) rawSlipAngle += 360f;
+            
+            // Apply smoothing to reduce jitter
+            xSlipAngle = Mathf.Lerp(xSlipAngle, rawSlipAngle, Time.fixedDeltaTime * 10f);
         }
         else
         {
-            // Position wheel at maximum extension when no contact
-            wheelVisual.position = wheelWorldPosition - transform.up * suspensionLength;
-            suspensionForceDirection = Vector3.zero;
+            xSlipAngle = Mathf.Lerp(xSlipAngle, 0f, Time.fixedDeltaTime * 5f);
         }
     }
 
@@ -295,7 +380,7 @@ public class WheelComponent : MonoBehaviour
         if (!freeRoll)
         {
             // Only rotate around Y axis for steering
-            Quaternion targetYRotation = Quaternion.Euler(0, -lerpedInputX, 0);
+            Quaternion targetYRotation = Quaternion.Euler(0, -lerpedInputX * 30f, 0); // Assuming 30 degree max turn
             wheelVisual.localRotation = Quaternion.Lerp(
                 wheelVisual.localRotation,
                 targetYRotation,
@@ -328,13 +413,8 @@ public class WheelComponent : MonoBehaviour
         // STEP 2: Update the wheelRim rotation (rolling motion)
         if (wheelRim != null)
         {
-            // Calculate rotation speed based on forward velocity in local wheel space
-            Vector3 wheelLocalVelocity = wheelVisual.InverseTransformDirection(
-                parentRigidbody.GetPointVelocity(wheelWorldPosition));
-                
-            // Calculate circumference dynamically based on current wheel radius
-            float currentWheelCircumference = 2 * Mathf.PI * GetWheelRadius();
-            float wheelRotationSpeed = wheelLocalVelocity.z * 360 / currentWheelCircumference;
+            // Use the calculated angular velocity for rim rotation
+            float wheelRotationSpeed = angularVelocity * Mathf.Rad2Deg;
             
             // Apply the direction multiplier based on flipX setting
             wheelRotationSpeed *= rollingDirectionMultiplier;
@@ -342,6 +422,50 @@ public class WheelComponent : MonoBehaviour
             // Rotate the rim (first child) around its X axis
             wheelRim.Rotate(Vector3.right, wheelRotationSpeed * Time.fixedDeltaTime, Space.Self);
         }
+    }
+
+    #endregion
+
+    #region Public Interface Methods
+    
+    /// <summary>
+    /// Get the current slip ratio of the wheel (0 = no slip, 1 = maximum grip, >1 = sliding)
+    /// </summary>
+    public float GetSlipRatio()
+    {
+        return slip;
+    }
+    
+    /// <summary>
+    /// Get the current slip angle in degrees
+    /// </summary>
+    public float GetSlipAngle()
+    {
+        return xSlipAngle;
+    }
+    
+    /// <summary>
+    /// Check if the wheel is currently sliding
+    /// </summary>
+    public bool IsSliding()
+    {
+        return isSliding;
+    }
+    
+    /// <summary>
+    /// Get the current angular velocity of the wheel in rad/s
+    /// </summary>
+    public float GetAngularVelocity()
+    {
+        return angularVelocity;
+    }
+    
+    /// <summary>
+    /// Get the current normal force on the wheel
+    /// </summary>
+    public float GetNormalForce()
+    {
+        return normalForce;
     }
 
     #endregion
@@ -366,15 +490,23 @@ public class WheelComponent : MonoBehaviour
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(wheelWorldPosition, 
-                            wheelWorldPosition + suspensionForceDirection);
+                            wheelWorldPosition + suspensionForceDirection * 0.01f);
         }
 
         // Draw slip direction
         if (worldSlipDirection != Vector3.zero)
         {
-            Gizmos.color = Color.red;
+            Gizmos.color = isSliding ? Color.red : Color.yellow;
             Gizmos.DrawLine(wheelWorldPosition, 
-                            wheelWorldPosition + worldSlipDirection);
+                            wheelWorldPosition + worldSlipDirection * 0.01f);
+        }
+        
+        // Draw slip angle indicator
+        if (Mathf.Abs(xSlipAngle) > 1f)
+        {
+            Gizmos.color = Color.magenta;
+            Vector3 slipDirection = Quaternion.Euler(0, xSlipAngle, 0) * transform.forward;
+            Gizmos.DrawLine(wheelWorldPosition, wheelWorldPosition + slipDirection * 0.5f);
         }
     }
 

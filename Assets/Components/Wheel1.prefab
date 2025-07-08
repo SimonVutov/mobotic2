@@ -284,23 +284,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d151cb464c0264dca853ad521037d132, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  wheelSizeOverride: -1
   wheelVisual: {fileID: 7466427516240785965}
   hideWheelVisual: 0
   freeRoll: 0
   flipX: 0
   suspensionLength: 0.1
   frictionCoefficient: 1
-  suspensionForce: 90
+  suspensionForce: 900
   maxGrip: 250
   wheelGrip: 15
   suspensionForceClamp: 200
   dampingAmount: 2.5
   dragCoefficient: 0.3
   rollingResistance: 0.015
+  coefStaticFriction: 0.95
+  coefKineticFriction: 0.35
+  wheelGripX: 8
+  wheelGripZ: 42
+  wheelMass: 16
+  brakeStrength: 0.5
   parentRigidbody: {fileID: 0}
   input: {x: 0, y: 0}
   isMovingForward: 0
   vehicleController: {fileID: 0}
+  braking: 0
 --- !u!65 &7268290131389054229
 BoxCollider:
   m_ObjectHideFlags: 0
