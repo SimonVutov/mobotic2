@@ -47,9 +47,9 @@ public class CameraController : MonoBehaviour
         x = angles.y;
         y = angles.x;
 
-        // Lock cursor (optional)
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // Always hide and lock the cursor
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void LateUpdate()
@@ -70,27 +70,11 @@ public class CameraController : MonoBehaviour
             x += Input.GetAxis("Mouse X") * xSpeed * 0.02f;
             y -= Input.GetAxis("Mouse Y") * ySpeed * 0.02f;
             y = ClampAngle(y, yMinLimit, yMaxLimit);
-            
-            // Manage cursor visibility
-            if (requireRightClick && Input.GetMouseButton(1))
-            {
-                // Hide cursor while rotating with right click
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
-            else if (!requireRightClick)
-            {
-                // For always-rotate mode, keep cursor visible but don't lock
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
         }
-        else
-        {
-            // Show cursor when not rotating
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
+
+        // Always hide and lock the cursor, regardless of rotation state
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         Quaternion rotation = Quaternion.Euler(y, x, 0);
         Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);

@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class WheelComponent : MonoBehaviour
 {
+    public string defaultTag = "wheel";
     public float wheelSizeOverride = -1f;
     [Header("Wheel Visual")]
     public Transform wheelVisual;  // Reference to existing wheel visual component
@@ -32,9 +33,9 @@ public class WheelComponent : MonoBehaviour
     [Header("Enhanced Physics")]
     [Range(0.1f, 2f)] public float coefStaticFriction = 0.95f;
     [Range(0.1f, 2f)] public float coefKineticFriction = 0.35f;
-    [Range(0.1f, 50f)] public float wheelGripX = 8f;    // Lateral grip
-    [Range(0.1f, 50f)] public float wheelGripZ = 42f;   // Longitudinal grip
-    [Range(0.1f, 50f)] public float wheelMass = 16f;    // Mass for inertia calculation
+    [Range(0.1f, 50f)] public float wheelGripX = 19f;    // Lateral grip
+    [Range(0.1f, 50f)] public float wheelGripZ = 19f;   // Longitudinal grip
+    [Range(0.1f, 50f)] public float wheelMass = 1f;    // Mass for inertia calculation
     [Range(0.1f, 10f)] public float brakeStrength = 0.5f;
     
     [HideInInspector] public Rigidbody parentRigidbody;

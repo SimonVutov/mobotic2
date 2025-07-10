@@ -1,5 +1,3 @@
-// VEHICLECONTROL.CS
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,16 +6,9 @@ using UnityEngine.UI;
 [System.Serializable]
 public class WheelReference
 {
-    // set defaults button, to setup this wheel
-
     public Transform wheel;
-    public KeyCode forwardsKey = KeyCode.W;
-    public KeyCode backwardsKey = KeyCode.S;
-    public KeyCode leftKey = KeyCode.A;
-    public KeyCode rightKey = KeyCode.D;
-
-    public float turnAngle = 45;
-    public float torque = 200;
+    public string tag = "wheel";
+    [HideInInspector] public WheelComponent wheelComponent;
 }
 
 public class vehicleControl : MonoBehaviour
@@ -44,23 +35,7 @@ public class vehicleControl : MonoBehaviour
         {
             wheels[i] = new WheelReference();
             wheels[i].wheel = wheelComponents[i].transform;
-            
-            // Set default keys based on wheel position or index
-            // You can customize this logic based on your wheel naming convention
-            if (i == 0) // First wheel - default WASD
-            {
-                wheels[i].forwardsKey = KeyCode.W;
-                wheels[i].backwardsKey = KeyCode.S;
-                wheels[i].leftKey = KeyCode.A;
-                wheels[i].rightKey = KeyCode.D;
-            }
-            else // Additional wheels - use arrow keys or other keys
-            {
-                wheels[i].forwardsKey = KeyCode.UpArrow;
-                wheels[i].backwardsKey = KeyCode.DownArrow;
-                wheels[i].leftKey = KeyCode.LeftArrow;
-                wheels[i].rightKey = KeyCode.RightArrow;
-            }
+            wheels[i].wheelComponent = wheelComponents[i];
         }
         
         Debug.Log($"Auto-search complete! Found {wheelComponents.Length} wheels.");
@@ -83,9 +58,17 @@ public class vehicleControl : MonoBehaviour
     {
         foreach (WheelReference child in wheels)
         {
-            // Let each wheel find its own local rigidbody (swivel piece) naturally
-            // DO NOT override parentRigidbody - let FindParentRigidbody() work properly
-            child.wheel.GetComponent<WheelComponent>().vehicleController = this;
+            // Get the WheelComponent and store it in the wheelComponent field
+            child.wheelComponent = child.wheel.GetComponent<WheelComponent>();
+            
+            if (child.wheelComponent != null)
+            {
+                child.wheelComponent.vehicleController = this;
+            }
+            else
+            {
+                Debug.LogError($"WheelComponent not found on {child.wheel.name}!");
+            }
         }
     }
 
@@ -93,16 +76,5 @@ public class vehicleControl : MonoBehaviour
     {
         // add center of mass offset to current center of mass
         GetComponent<Rigidbody>().centerOfMass += centerOfMass;
-    }
-
-    void Update()
-    {
-        foreach (WheelReference child in wheels)
-        {
-            child.wheel.GetComponent<WheelComponent>().input = new Vector2(
-                (Input.GetKey(child.rightKey) ? 1 : Input.GetKey(child.leftKey) ? -1 : 0) * child.turnAngle,
-                (Input.GetKey(child.forwardsKey) ? 1 : Input.GetKey(child.backwardsKey) ? -1 : 0) * child.torque
-            );
-        }
     }
 }

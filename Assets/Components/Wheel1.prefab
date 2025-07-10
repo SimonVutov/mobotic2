@@ -300,9 +300,9 @@ MonoBehaviour:
   rollingResistance: 0.015
   coefStaticFriction: 0.95
   coefKineticFriction: 0.35
-  wheelGripX: 8
-  wheelGripZ: 42
-  wheelMass: 16
+  wheelGripX: 19
+  wheelGripZ: 19
+  wheelMass: 1
   brakeStrength: 0.5
   parentRigidbody: {fileID: 0}
   input: {x: 0, y: 0}
