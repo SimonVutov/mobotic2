@@ -17,3 +17,6 @@ Add back map selector, vehicle selector, menu system
 mass in kg removal. Use built in rigidbody mass and drag for that stuff. simplify
 
 more wheel rotational drag. More realistic forces like that
+
+
+WHEEL ROTATING AROUND CORRECT POINTS, NEW GAMEOBEJCT FOR THAT POSITION
