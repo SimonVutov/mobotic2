@@ -11,6 +11,7 @@ public class WheelComponent : MonoBehaviour
     [Header("Wheel Visual")]
     public Transform wheelVisual;  // Reference to existing wheel visual component
     private Transform wheelRim;    // Will be set to the first child of wheelVisual
+    public Transform customPivotPoint;  // Optional: custom pivot point for wheel rotation (for castor wheels)
     public bool hideWheelVisual = false;
     
     [Header("Wheel Configuration")]
@@ -418,10 +419,16 @@ public class WheelComponent : MonoBehaviour
             float wheelRotationSpeed = angularVelocity * Mathf.Rad2Deg;
             
             // Apply the direction multiplier based on flipX setting
-            wheelRotationSpeed *= rollingDirectionMultiplier;
-            
-            // Rotate the rim (first child) around its X axis
-            wheelRim.Rotate(Vector3.right, wheelRotationSpeed * Time.fixedDeltaTime, Space.Self);
+            if (customPivotPoint != null)
+            {
+                // For castor wheels: rotate around the custom pivot
+                wheelRim.RotateAround(customPivotPoint.position, wheelRim.transform.right, wheelRotationSpeed * Time.fixedDeltaTime);
+            }
+            else
+            {
+                // Standard wheel: rotate around own center  
+                wheelRim.RotateAround(wheelRim.position, wheelRim.transform.right, wheelRotationSpeed * Time.fixedDeltaTime);
+            }
         }
     }
 

@@ -284,9 +284,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d151cb464c0264dca853ad521037d132, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  defaultTag: wheel
   wheelSizeOverride: -1
   wheelVisual: {fileID: 7466427516240785965}
   hideWheelVisual: 0
+  rollingPivot: {fileID: 4158079318833544608}
+  steeringPivot: {fileID: 4158079318833544608}
   freeRoll: 0
   flipX: 0
   suspensionLength: 0.1

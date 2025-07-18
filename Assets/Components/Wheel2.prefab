@@ -258,6 +258,7 @@ MonoBehaviour:
   defaultTag: wheel
   wheelSizeOverride: 0.51
   wheelVisual: {fileID: 2077559602298459244}
+  customPivotPoint: {fileID: 0}
   hideWheelVisual: 0
   freeRoll: 0
   flipX: 0
@@ -530,13 +531,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Wheel4
       objectReference: {fileID: 0}
+    - target: {fileID: 5056303752865390641, guid: 88e5ac7802946432690152ccabbecd0a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6429126970597338708, guid: 88e5ac7802946432690152ccabbecd0a, type: 3}
       propertyPath: suspensionLength
       value: 0.01
       objectReference: {fileID: 0}
     - target: {fileID: 6429126970597338708, guid: 88e5ac7802946432690152ccabbecd0a, type: 3}
       propertyPath: wheelSizeOverride
-      value: 0.33516
+      value: 0.34
       objectReference: {fileID: 0}
     - target: {fileID: 7799902924129329578, guid: 88e5ac7802946432690152ccabbecd0a, type: 3}
       propertyPath: m_LocalScale.x

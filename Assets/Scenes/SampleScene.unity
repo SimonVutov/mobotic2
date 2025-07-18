@@ -1442,22 +1442,6 @@ Transform:
   - {fileID: 1520414757}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &681147797 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 797326559185450983, guid: e3c63be308240443a997139194abc5bf, type: 3}
-  m_PrefabInstance: {fileID: 1829951907}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &681147798 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7766185110027088314, guid: e3c63be308240443a997139194abc5bf, type: 3}
-  m_PrefabInstance: {fileID: 1829951907}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d151cb464c0264dca853ad521037d132, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &721778672
 GameObject:
   m_ObjectHideFlags: 0
@@ -1795,7 +1779,7 @@ MonoBehaviour:
   - wheel: {fileID: 1532178939}
     tag: poweredRight
     wheelComponent: {fileID: 0}
-  - wheel: {fileID: 1468767106}
+  - wheel: {fileID: 0}
     tag: wheel
     wheelComponent: {fileID: 0}
   - wheel: {fileID: 1197152345}
@@ -1804,9 +1788,9 @@ MonoBehaviour:
   - wheel: {fileID: 634828282}
     tag: poweredLeft
     wheelComponent: {fileID: 966790600}
-  - wheel: {fileID: 681147797}
+  - wheel: {fileID: 0}
     tag: wheel
-    wheelComponent: {fileID: 681147798}
+    wheelComponent: {fileID: 0}
   autoSearchWheels: 0
   sectionCount: 1
   massInKg: 100
@@ -2099,11 +2083,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7799902924129329578, guid: 7a1d4fcb646c747e889195113ce1dca1, type: 3}
   m_PrefabInstance: {fileID: 190853396}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &1468767106 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1081143180610254416, guid: 6d749e1c12f4249ddb7ac2e5aea6d477, type: 3}
-  m_PrefabInstance: {fileID: 1489524509}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1489524509
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2123,6 +2102,14 @@ PrefabInstance:
     - target: {fileID: 4393907459947553782, guid: 6d749e1c12f4249ddb7ac2e5aea6d477, type: 3}
       propertyPath: m_Name
       value: Wheel2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6671924778687465868, guid: 6d749e1c12f4249ddb7ac2e5aea6d477, type: 3}
+      propertyPath: wheelSizeOverride
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7019361106070296188, guid: 6d749e1c12f4249ddb7ac2e5aea6d477, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.274
       objectReference: {fileID: 0}
     - target: {fileID: 7844468363476721297, guid: 6d749e1c12f4249ddb7ac2e5aea6d477, type: 3}
       propertyPath: m_LocalScale.x
@@ -2179,6 +2166,10 @@ PrefabInstance:
     - target: {fileID: 8059008518225670157, guid: 6d749e1c12f4249ddb7ac2e5aea6d477, type: 3}
       propertyPath: wheelSizeOverride
       value: 0.186
+      objectReference: {fileID: 0}
+    - target: {fileID: 8676186916759085725, guid: 6d749e1c12f4249ddb7ac2e5aea6d477, type: 3}
+      propertyPath: wheelSizeOverride
+      value: 0.179
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2777,6 +2768,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6379104255603411003, guid: e3c63be308240443a997139194abc5bf, type: 3}
+      propertyPath: wheelSizeOverride
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7312040419173652427, guid: e3c63be308240443a997139194abc5bf, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.27399966
+      objectReference: {fileID: 0}
     - target: {fileID: 7766185110027088314, guid: e3c63be308240443a997139194abc5bf, type: 3}
       propertyPath: freeRoll
       value: 1
@@ -2788,6 +2787,10 @@ PrefabInstance:
     - target: {fileID: 7920490594585958078, guid: e3c63be308240443a997139194abc5bf, type: 3}
       propertyPath: m_Name
       value: Wheel2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8969010678387352362, guid: e3c63be308240443a997139194abc5bf, type: 3}
+      propertyPath: wheelSizeOverride
+      value: 0.179
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
